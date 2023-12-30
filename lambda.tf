@@ -39,6 +39,8 @@ data "aws_iam_policy_document" "lambda_manage_ami" {
       "ec2:*ImageDeprecation",
       "ec2:ModifyImageAttribute",
       "ec2:DeregisterImage",
+      "ec2:DescribeSnapshots",
+      "ec2:DeleteSnapshot",
     ]
 
     resources = ["*"]
