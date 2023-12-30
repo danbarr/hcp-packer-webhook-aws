@@ -9,12 +9,12 @@ Currently handles the following HCP Packer events:
 - Restored iteration: cancels the AMI deprecation and removes the tags added by the revoked handler
 - Deleted iteration: deregisters the AMI(s) and deletes the associated snapshots
 
-Prerequisites:
+## Prerequisites
 
 - An HCP service account (organization or project level) to bootstrap the configuration ("Admin" role is required to create a new project-level service account for the handler to use).
 - A key for the above service account set in `HCP_CLIENT_ID` and `HCP_CLIENT_SECRET` environment variables to authenticate the `hcp` provider. If a project-level service account is used, `HCP_PROJECT_ID` is also required. Refer to the [Authenticate with HCP](https://registry.terraform.io/providers/hashicorp/hcp/latest/docs/guides/auth) guide in the provider docs.
 
-Usage:
+## Usage
 
 This configuration will create everything except the webhook in HCP. Webhooks are not yet suppored by the HCP provider.
 
