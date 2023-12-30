@@ -32,10 +32,10 @@ This configuration will create everything except the webhook in HCP. Webhooks ar
 
 | Name | Version |
 |------|---------|
-| <a name="requirement_archive"></a> [archive](#requirement\_archive) | ~> 2.4 |
-| <a name="requirement_aws"></a> [aws](#requirement\_aws) | ~> 5.0 |
-| <a name="requirement_hcp"></a> [hcp](#requirement\_hcp) | ~> 0.79 |
-| <a name="requirement_random"></a> [random](#requirement\_random) | ~> 3.6 |
+| <a name="provider_archive"></a> [archive](#provider\_archive) | ~> 2.4 |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | ~> 5.0 |
+| <a name="provider_hcp"></a> [hcp](#provider\_hcp) | ~> 0.79 |
+| <a name="provider_random"></a> [random](#provider\_random) | ~> 3.6 |
 
 ## Modules
 
@@ -45,6 +45,8 @@ No modules.
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
+| <a name="input_api_gateway_logging_level"></a> [api\_gateway\_logging\_level](#input\_api\_gateway\_logging\_level) | Log level for API Gateway execution logging. | `string` | `"ERROR"` | no |
+| <a name="input_enable_api_gateway_logging"></a> [enable\_api\_gateway\_logging](#input\_enable\_api\_gateway\_logging) | Whether to enable API Gateway logging. | `bool` | `false` | no |
 | <a name="input_log_retention_days"></a> [log\_retention\_days](#input\_log\_retention\_days) | Number of days to retain CloudWatch logs. | `number` | `14` | no |
 | <a name="input_region"></a> [region](#input\_region) | The AWS region to use. | `string` | n/a | yes |
 
