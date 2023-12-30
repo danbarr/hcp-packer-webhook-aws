@@ -42,13 +42,17 @@ resource "aws_api_gateway_method" "webhook" {
   }
 }
 
+# API Gateway execution logging requires a CloudWatch log role to be set up in your API Gateway settings.
+# Because this is an account/region-level setting, this is not configured here.
+# See https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-logging.html?icmpid=apigateway_console_help#set-up-access-logging-permissions
 resource "aws_api_gateway_method_settings" "webhook" {
+  count       = var.enable_api_gateway_logging ? 1 : 0
   rest_api_id = aws_api_gateway_rest_api.webhook.id
   stage_name  = aws_api_gateway_stage.webhook.stage_name
   method_path = "*/*"
 
   settings {
-    logging_level      = "INFO"
+    logging_level      = var.api_gateway_logging_level
     metrics_enabled    = true
     data_trace_enabled = false
   }
@@ -56,9 +60,20 @@ resource "aws_api_gateway_method_settings" "webhook" {
   depends_on = [aws_cloudwatch_log_group.webhook_api_gateway]
 }
 
+moved {
+  from = aws_api_gateway_method_settings.webhook
+  to   = aws_api_gateway_method_settings.webhook[0]
+}
+
 resource "aws_cloudwatch_log_group" "webhook_api_gateway" {
+  count             = var.enable_api_gateway_logging ? 1 : 0
   name              = "API-Gateway-Execution-Logs_${aws_api_gateway_rest_api.webhook.id}/${local.stage_name}"
   retention_in_days = var.log_retention_days
+}
+
+moved {
+  from = aws_cloudwatch_log_group.webhook_api_gateway
+  to   = aws_cloudwatch_log_group.webhook_api_gateway[0]
 }
 
 resource "aws_api_gateway_integration" "webhook" {
