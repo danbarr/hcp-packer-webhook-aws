@@ -77,6 +77,10 @@ def complete(body):
                             "Value": body["eventPayload"]["iteration"]["fingerprint"],
                         },
                         {
+                            "Key": "HCPPackerIterationVersion",
+                            "Value": body["eventPayload"]["iteration"]["version"],
+                        },
+                        {
                             "Key": "HCPPackerBuildID",
                             "Value": ami["build_id"],
                         },
@@ -110,7 +114,6 @@ def revoke(body):
     """Handle the HCP Packer 'Revoked iteration' webhook event. Sets the AMI deprecation time and adds metadata tags."""
     # Set the deprecation time to the current time plus 1 minute (EnableImageDeprecation won't accept a time in the past)
     deprecation_time = datetime.now(timezone.utc) + timedelta(minutes=1)
-    deprecation_reason = body["eventPayload"]["iteration"]["revocation_message"]
     result = {"actions": []}
 
     try:
@@ -122,7 +125,7 @@ def revoke(body):
         for ami in amis:
             ec2_client = boto3.client("ec2", region_name=ami["region"])
             result_status = "Success"
-            result_message = "AMI deprecation time set to {deprecation_time}"
+            result_message = f"AMI deprecation time set to {deprecation_time}"
             ami_id = ami["id"]
 
             try:
@@ -136,12 +139,20 @@ def revoke(body):
                     Resources=[ami_id],
                     Tags=[
                         {
-                            "Key": "DeprecationTime",
-                            "Value": deprecation_time.isoformat(),
+                            "Key": "HCPPackerRevoked",
+                            "Value": "true",
                         },
                         {
-                            "Key": "DeprecationReason",
-                            "Value": deprecation_reason,
+                            "Key": "HCPPackerRevokedBy",
+                            "Value": body["eventPayload"]["iteration"][
+                                "revocation_author"
+                            ],
+                        },
+                        {
+                            "Key": "HCPPackerRevocationMessage",
+                            "Value": body["eventPayload"]["iteration"][
+                                "revocation_message"
+                            ],
                         },
                     ],
                 )
@@ -249,7 +260,11 @@ def restore(body):
                 ec2_client.delete_tags(
                     DryRun=False,
                     Resources=[ami_id],
-                    Tags=[{"Key": "DeprecationTime"}, {"Key": "DeprecationReason"}],
+                    Tags=[
+                        {"Key": "HCPPackerRevoked"},
+                        {"Key": "HCPPackerRevokedBy"},
+                        {"Key": "HCPPackerRevocationMessage"},
+                    ],
                 )
 
             except botocore.exceptions.ClientError as e:
