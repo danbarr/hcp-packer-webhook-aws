@@ -60,20 +60,10 @@ resource "aws_api_gateway_method_settings" "webhook" {
   depends_on = [aws_cloudwatch_log_group.webhook_api_gateway]
 }
 
-moved {
-  from = aws_api_gateway_method_settings.webhook
-  to   = aws_api_gateway_method_settings.webhook[0]
-}
-
 resource "aws_cloudwatch_log_group" "webhook_api_gateway" {
   count             = var.enable_api_gateway_logging ? 1 : 0
   name              = "API-Gateway-Execution-Logs_${aws_api_gateway_rest_api.webhook.id}/${local.stage_name}"
   retention_in_days = var.log_retention_days
-}
-
-moved {
-  from = aws_cloudwatch_log_group.webhook_api_gateway
-  to   = aws_cloudwatch_log_group.webhook_api_gateway[0]
 }
 
 resource "aws_api_gateway_integration" "webhook" {
