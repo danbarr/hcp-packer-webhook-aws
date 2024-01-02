@@ -9,10 +9,13 @@ Currently handles the following HCP Packer events:
 - Restored iteration: cancels the AMI deprecation and removes the tags added by the revoked handler
 - Deleted iteration: deregisters the AMI(s) and deletes the associated snapshots
 
+Credit to [Grant Orchard](https://github.com/grantorchard) in the HashiCorp Field CTO org for [this starting point](https://github.com/tfo-apj-demos/terraform-aws-packer-webhook-mutation).
+
 ## Prerequisites
 
-- An HCP service account (organization or project level) to bootstrap the configuration ("Admin" role is required to create a new project-level service account for the handler to use).
-- A key for the above service account set in `HCP_CLIENT_ID` and `HCP_CLIENT_SECRET` environment variables to authenticate the `hcp` provider. If a project-level service account is used, `HCP_PROJECT_ID` is also required. Refer to the [Authenticate with HCP](https://registry.terraform.io/providers/hashicorp/hcp/latest/docs/guides/auth) guide in the provider docs.
+- An AWS account with credentials sufficient to create the resources in this config. Refer to the [Authentication and Configuration](https://registry.terraform.io/providers/hashicorp/aws/latest/docs#authentication-and-configuration) guide in the AWS provider docs.
+- An HCP service account (organization or project level) to bootstrap the configuration. The "Admin" role is required to create a new project-level service account for the handler to use.
+- A key for the above service account set in `HCP_CLIENT_ID` and `HCP_CLIENT_SECRET` environment variables to authenticate the `hcp` provider. If a project-level service account is used, `HCP_PROJECT_ID` is also required. Refer to the [Authenticate with HCP](https://registry.terraform.io/providers/hashicorp/hcp/latest/docs/guides/auth) guide in the HCP provider docs.
 
 ## Usage
 
@@ -20,7 +23,7 @@ This configuration will create everything except the webhook in HCP. Webhooks ar
 
 1. Apply this Terraform configuration to create the webhook handler resources.
 2. Obtain the generated HMAC token from AWS Secrets Manager.
-3. Create a webhook in your HCP project settings, specifying the URL (output from this confic) and HMAC token.
+3. Create a webhook in your HCP project settings, specifying the URL (output from this config) and HMAC token.
 4. Enable the following registry events:
    1. Completed iteration
    2. Revoked iteration
@@ -28,18 +31,14 @@ This configuration will create everything except the webhook in HCP. Webhooks ar
    4. Deleted iteration
 
 <!-- BEGIN_TF_DOCS -->
-## Providers
+## Requirements
 
 | Name | Version |
 |------|---------|
-| <a name="provider_archive"></a> [archive](#provider\_archive) | ~> 2.4 |
-| <a name="provider_aws"></a> [aws](#provider\_aws) | ~> 5.0 |
-| <a name="provider_hcp"></a> [hcp](#provider\_hcp) | ~> 0.79 |
-| <a name="provider_random"></a> [random](#provider\_random) | ~> 3.6 |
-
-## Modules
-
-No modules.
+| <a name="requirement_archive"></a> [archive](#requirement\_archive) | ~> 2.4 |
+| <a name="requirement_aws"></a> [aws](#requirement\_aws) | ~> 5.0 |
+| <a name="requirement_hcp"></a> [hcp](#requirement\_hcp) | ~> 0.79 |
+| <a name="requirement_random"></a> [random](#requirement\_random) | ~> 3.6 |
 
 ## Inputs
 
