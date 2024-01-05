@@ -18,11 +18,11 @@ def lambda_handler(event, context):
     except KeyError:
         return {"statusCode": 403, "body": "HMAC signature not provided."}
 
-    # --- Verify the HMAC, then check the eventAction value to determine what to do.
+    # --- Verify the HMAC, then check the event_action value to determine what to do.
     if verify_hmac(event):
         body = json.loads(event["body"])
 
-        match body["eventAction"]:
+        match body["event_action"]:
             case "test":
                 return verify()
             case "complete":
@@ -36,7 +36,7 @@ def lambda_handler(event, context):
             case _:
                 return {
                     "statusCode": 400,
-                    "body": f"Action {body['eventAction']} found in request is not supported.",
+                    "body": f"Action {body['event_action']} found in request is not supported.",
                 }
     else:
         return {"statusCode": 403, "body": "Unauthorized: HMAC signature mismatch."}
@@ -53,7 +53,7 @@ def complete(body):
     """Handle the HCP Packer 'Completed iteration' webhook event. Adds metadata tags to the AMI(s)."""
     result = {"actions": []}
     try:
-        amis = return_image_id(body["eventPayload"]["builds"], "aws")
+        amis = return_image_id(body["event_payload"]["builds"], "aws")
         if len(amis) == 0:
             return {"statusCode": 200, "body": "No AMIs found in iteration."}
 
@@ -70,15 +70,15 @@ def complete(body):
                     Tags=[
                         {
                             "Key": "HCPPackerBucket",
-                            "Value": body["eventPayload"]["bucket"]["slug"],
+                            "Value": body["event_payload"]["bucket"]["slug"],
                         },
                         {
                             "Key": "HCPPackerIterationFingerprint",
-                            "Value": body["eventPayload"]["iteration"]["fingerprint"],
+                            "Value": body["event_payload"]["iteration"]["fingerprint"],
                         },
                         {
                             "Key": "HCPPackerIterationVersion",
-                            "Value": body["eventPayload"]["iteration"]["version"],
+                            "Value": body["event_payload"]["iteration"]["version"],
                         },
                         {
                             "Key": "HCPPackerBuildID",
@@ -144,13 +144,13 @@ def revoke(body):
                         },
                         {
                             "Key": "HCPPackerRevokedBy",
-                            "Value": body["eventPayload"]["iteration"][
+                            "Value": body["event_payload"]["iteration"][
                                 "revocation_author"
                             ],
                         },
                         {
                             "Key": "HCPPackerRevocationMessage",
-                            "Value": body["eventPayload"]["iteration"][
+                            "Value": body["event_payload"]["iteration"][
                                 "revocation_message"
                             ],
                         },
@@ -184,7 +184,7 @@ def delete(body):
     """Handle the HCP Packer 'Deleted iteration' webhook event. Deregisters the AMI(s) and deletes their associated snapshots."""
     result = {"actions": []}
     try:
-        amis = return_image_id(body["eventPayload"]["builds"], "aws")
+        amis = return_image_id(body["event_payload"]["builds"], "aws")
         if len(amis) == 0:
             return {"statusCode": 200, "body": "No AMIs found in iteration."}
 
@@ -309,11 +309,11 @@ def get_secrets(secret_arn):
 
 
 def get_builds(body):
-    """Get the builds associated with an HCP Packer iteration. Used for the webhook events that don't include it in the eventPayload."""
-    organization_id = body["eventPayload"]["organization_id"]
-    project_id = body["eventPayload"]["project_id"]
-    bucket_slug = body["eventPayload"]["bucket"]["slug"]
-    iteration_id = body["eventPayload"]["iteration"]["id"]
+    """Get the builds associated with an HCP Packer iteration. Used for the webhook events that don't include it in the event_payload."""
+    organization_id = body["event_payload"]["organization_id"]
+    project_id = body["event_payload"]["project_id"]
+    bucket_slug = body["event_payload"]["bucket"]["slug"]
+    iteration_id = body["event_payload"]["iteration"]["id"]
 
     access_token = hcp_auth()
     api_url = f"https://api.cloud.hashicorp.com/packer/2021-04-30/organizations/{organization_id}/projects/{project_id}/"
