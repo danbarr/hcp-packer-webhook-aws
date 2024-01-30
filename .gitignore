@@ -1,6 +1,9 @@
 # Function test script
 function/test.py
 
+# Function zip
+function/lambda_function.zip
+
 # Local .terraform directories
 **/.terraform/*
 
