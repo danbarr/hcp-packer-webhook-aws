@@ -53,7 +53,9 @@ def complete(body):
     """Handle the HCP Packer 'Completed version' webhook event. Adds metadata tags to the AMI(s)."""
     result = {"actions": []}
     try:
-        amis = return_artifact_id(body["event_payload"]["builds"], "aws")
+        # Temporary fix to the missing builds array in the completed event
+        #amis = return_artifact_id(body["event_payload"]["builds"], "aws")
+        amis = return_artifact_id(get_builds(body), "aws")
         if len(amis) == 0:
             return {"statusCode": 200, "body": "No AMIs found in artifact version."}
 
