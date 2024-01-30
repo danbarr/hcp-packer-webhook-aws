@@ -50,12 +50,14 @@ def verify():
 
 
 def complete(body):
-    """Handle the HCP Packer 'Completed iteration' webhook event. Adds metadata tags to the AMI(s)."""
+    """Handle the HCP Packer 'Completed version' webhook event. Adds metadata tags to the AMI(s)."""
     result = {"actions": []}
     try:
-        amis = return_image_id(body["event_payload"]["builds"], "aws")
+        # Temporary fix to the missing builds array in the completed event
+        #amis = return_artifact_id(body["event_payload"]["builds"], "aws")
+        amis = return_artifact_id(get_builds(body), "aws")
         if len(amis) == 0:
-            return {"statusCode": 200, "body": "No AMIs found in iteration."}
+            return {"statusCode": 200, "body": "No AMIs found in artifact version."}
 
         for ami in amis:
             ec2_client = boto3.client("ec2", region_name=ami["region"])
@@ -70,15 +72,15 @@ def complete(body):
                     Tags=[
                         {
                             "Key": "HCPPackerBucket",
-                            "Value": body["event_payload"]["bucket"]["slug"],
+                            "Value": body["event_payload"]["bucket"]["name"],
                         },
                         {
-                            "Key": "HCPPackerIterationFingerprint",
-                            "Value": body["event_payload"]["iteration"]["fingerprint"],
+                            "Key": "HCPPackerVersionFingerprint",
+                            "Value": body["event_payload"]["version"]["fingerprint"],
                         },
                         {
-                            "Key": "HCPPackerIterationVersion",
-                            "Value": body["event_payload"]["iteration"]["version"],
+                            "Key": "HCPPackerVersion",
+                            "Value": body["event_payload"]["version"]["name"],
                         },
                         {
                             "Key": "HCPPackerBuildID",
@@ -111,16 +113,16 @@ def complete(body):
 
 
 def revoke(body):
-    """Handle the HCP Packer 'Revoked iteration' webhook event. Sets the AMI deprecation time and adds metadata tags."""
+    """Handle the HCP Packer 'Revoked version' webhook event. Sets the AMI deprecation time and adds metadata tags."""
     # Set the deprecation time to the current time plus 1 minute (EnableImageDeprecation won't accept a time in the past)
     deprecation_time = datetime.now(timezone.utc) + timedelta(minutes=1)
     result = {"actions": []}
 
     try:
         # The revoke webhook doesn't include the builds object, so we need to call get_builds to get them
-        amis = return_image_id(get_builds(body), "aws")
+        amis = return_artifact_id(get_builds(body), "aws")
         if len(amis) == 0:
-            return {"statusCode": 200, "body": "No AMIs found in iteration."}
+            return {"statusCode": 200, "body": "No AMIs found in artifact version."}
 
         for ami in amis:
             ec2_client = boto3.client("ec2", region_name=ami["region"])
@@ -144,13 +146,13 @@ def revoke(body):
                         },
                         {
                             "Key": "HCPPackerRevokedBy",
-                            "Value": body["event_payload"]["iteration"][
+                            "Value": body["event_payload"]["version"][
                                 "revocation_author"
                             ],
                         },
                         {
                             "Key": "HCPPackerRevocationMessage",
-                            "Value": body["event_payload"]["iteration"][
+                            "Value": body["event_payload"]["version"][
                                 "revocation_message"
                             ],
                         },
@@ -181,12 +183,12 @@ def revoke(body):
 
 
 def delete(body):
-    """Handle the HCP Packer 'Deleted iteration' webhook event. Deregisters the AMI(s) and deletes their associated snapshots."""
+    """Handle the HCP Packer 'Deleted version' webhook event. Deregisters the AMI(s) and deletes their associated snapshots."""
     result = {"actions": []}
     try:
-        amis = return_image_id(body["event_payload"]["builds"], "aws")
+        amis = return_artifact_id(body["event_payload"]["builds"], "aws")
         if len(amis) == 0:
-            return {"statusCode": 200, "body": "No AMIs found in iteration."}
+            return {"statusCode": 200, "body": "No AMIs found in artifact version."}
 
         for ami in amis:
             ec2_client = boto3.client("ec2", region_name=ami["region"])
@@ -238,13 +240,13 @@ def delete(body):
 
 
 def restore(body):
-    """Handle the HCP Packer 'Restored iteration' webhook event. Disables deprecation on the AMI and removes the tag added by the 'revoke' handler."""
+    """Handle the HCP Packer 'Restored version' webhook event. Disables deprecation on the AMI and removes the tag added by the 'revoke' handler."""
     result = {"actions": []}
     try:
         # The restore webhook doesn't include the builds object, so we need to call get_builds to get them
-        amis = return_image_id(get_builds(body), "aws")
+        amis = return_artifact_id(get_builds(body), "aws")
         if len(amis) == 0:
-            return {"statusCode": 200, "body": "No AMIs found in iteration."}
+            return {"statusCode": 200, "body": "No AMIs found in artifact version."}
 
         for ami in amis:
             ec2_client = boto3.client("ec2", region_name=ami["region"])
@@ -309,25 +311,25 @@ def get_secrets(secret_arn):
 
 
 def get_builds(body):
-    """Get the builds associated with an HCP Packer iteration. Used for the webhook events that don't include it in the event_payload."""
+    """Get the builds associated with an HCP Packer version. Used for the webhook events that don't include it in the event_payload."""
     organization_id = body["event_payload"]["organization_id"]
     project_id = body["event_payload"]["project_id"]
-    bucket_slug = body["event_payload"]["bucket"]["slug"]
-    iteration_id = body["event_payload"]["iteration"]["id"]
+    bucket_name = body["event_payload"]["bucket"]["name"]
+    fingerprint = body["event_payload"]["version"]["fingerprint"]
 
     access_token = hcp_auth()
-    api_url = f"https://api.cloud.hashicorp.com/packer/2021-04-30/organizations/{organization_id}/projects/{project_id}/"
+    api_url = f"https://api.cloud.hashicorp.com/packer/2023-01-01/organizations/{organization_id}/projects/{project_id}/"
     headers = {"Authorization": f"Bearer {access_token}"}
 
     http = urllib3.PoolManager()
     response = http.request(
         "GET",
-        f"{api_url}/images/{bucket_slug}/iteration?iteration_id={iteration_id}",
+        f"{api_url}/buckets/{bucket_name}/versions/{fingerprint}",
         headers=headers,
     )
     if response.status != 200:
-        raise Exception(f"Failed to get builds from iteration: {response.data}")
-    return json.loads(response.data)["iteration"]["builds"]
+        raise Exception(f"Failed to get builds from version: {response.data}")
+    return json.loads(response.data)["version"]["builds"]
 
 
 def hcp_auth():
@@ -351,18 +353,18 @@ def hcp_auth():
     return json.loads(response.data)["access_token"]
 
 
-def return_image_id(builds, provider):
-    """Extracts the image IDs for the given cloud provider."""
-    image_ids = []
+def return_artifact_id(builds, provider):
+    """Extracts the artifact IDs for the given cloud provider."""
+    artifact_ids = []
     for build in builds:
-        if build["cloud_provider"] == provider:
-            for image in build["images"]:
-                image_ids.append(
+        if build["platform"] == provider:
+            for artifacts in build["artifacts"]:
+                artifact_ids.append(
                     {
-                        "id": image["image_id"],
-                        "region": image["region"],
+                        "id": artifacts["external_identifier"],
+                        "region": artifacts["region"],
                         "build_id": build["id"],
                     }
                 )
 
-    return image_ids
+    return artifact_ids
