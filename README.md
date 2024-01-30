@@ -19,16 +19,9 @@ Credit to [Grant Orchard](https://github.com/grantorchard) in the HashiCorp Fiel
 
 ## Usage
 
-This configuration will create everything except the webhook in HCP. Webhooks are not yet suppored by the HCP provider.
-
 1. Apply this Terraform configuration to create the webhook handler resources.
-2. Obtain the generated HMAC token from AWS Secrets Manager.
-3. Create a webhook in your HCP project settings, specifying the URL (output from this config) and HMAC token.
-4. Enable the following registry events:
-   1. Completed iteration
-   2. Revoked iteration
-   3. Restored iteration
-   4. Deleted iteration
+2. Access the Webhooks page in your HCP project settings to verify the webhook was created and is enabled.
+3. Run a new Packer build; you should see the webhook fire after the iteration completes; the new AMI should have several `HCPPacker*` tags added.
 
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
@@ -37,7 +30,7 @@ This configuration will create everything except the webhook in HCP. Webhooks ar
 |------|---------|
 | <a name="requirement_archive"></a> [archive](#requirement\_archive) | ~> 2.4 |
 | <a name="requirement_aws"></a> [aws](#requirement\_aws) | ~> 5.0 |
-| <a name="requirement_hcp"></a> [hcp](#requirement\_hcp) | ~> 0.79 |
+| <a name="requirement_hcp"></a> [hcp](#requirement\_hcp) | ~> 0.82 |
 | <a name="requirement_random"></a> [random](#requirement\_random) | ~> 3.6 |
 
 ## Inputs
@@ -46,6 +39,8 @@ This configuration will create everything except the webhook in HCP. Webhooks ar
 |------|-------------|------|---------|:--------:|
 | <a name="input_api_gateway_logging_level"></a> [api\_gateway\_logging\_level](#input\_api\_gateway\_logging\_level) | Log level for API Gateway execution logging. | `string` | `"ERROR"` | no |
 | <a name="input_enable_api_gateway_logging"></a> [enable\_api\_gateway\_logging](#input\_enable\_api\_gateway\_logging) | Whether to enable API Gateway logging. | `bool` | `false` | no |
+| <a name="input_hcp_webhook_description"></a> [hcp\_webhook\_description](#input\_hcp\_webhook\_description) | Description for the HCP webhook. | `string` | `"Handler for AWS image events"` | no |
+| <a name="input_hcp_webhook_name"></a> [hcp\_webhook\_name](#input\_hcp\_webhook\_name) | Name for the HCP webhook. | `string` | `"AWS-Handler"` | no |
 | <a name="input_log_retention_days"></a> [log\_retention\_days](#input\_log\_retention\_days) | Number of days to retain CloudWatch logs. | `number` | `14` | no |
 | <a name="input_region"></a> [region](#input\_region) | The AWS region to use. | `string` | n/a | yes |
 
@@ -53,7 +48,8 @@ This configuration will create everything except the webhook in HCP. Webhooks ar
 
 | Name | Description |
 |------|-------------|
-| <a name="output_webhook_url"></a> [webhook\_url](#output\_webhook\_url) | URL of the webhook handler. |
+| <a name="output_hcp_webhook_resource_name"></a> [hcp\_webhook\_resource\_name](#output\_hcp\_webhook\_resource\_name) | API resource name of the HCP notification webhook. |
+| <a name="output_webhook_url"></a> [webhook\_url](#output\_webhook\_url) | API Gateway URL of the webhook handler in AWS. |
 
 ## Resources
 
@@ -75,6 +71,7 @@ This configuration will create everything except the webhook in HCP. Webhooks ar
 | [aws_secretsmanager_secret.hmac_token](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/secretsmanager_secret) | resource |
 | [aws_secretsmanager_secret_version.hcp_credential](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/secretsmanager_secret_version) | resource |
 | [aws_secretsmanager_secret_version.hmac_token](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/secretsmanager_secret_version) | resource |
+| [hcp_notifications_webhook.aws](https://registry.terraform.io/providers/hashicorp/hcp/latest/docs/resources/notifications_webhook) | resource |
 | [hcp_project_iam_binding.webhook](https://registry.terraform.io/providers/hashicorp/hcp/latest/docs/resources/project_iam_binding) | resource |
 | [hcp_service_principal.webhook](https://registry.terraform.io/providers/hashicorp/hcp/latest/docs/resources/service_principal) | resource |
 | [hcp_service_principal_key.webhook](https://registry.terraform.io/providers/hashicorp/hcp/latest/docs/resources/service_principal_key) | resource |

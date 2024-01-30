@@ -3,6 +3,18 @@ variable "region" {
   description = "The AWS region to use."
 }
 
+variable "hcp_webhook_name" {
+  type        = string
+  description = "Name for the HCP webhook."
+  default     = "AWS-Handler"
+}
+
+variable "hcp_webhook_description" {
+  type        = string
+  description = "Description for the HCP webhook."
+  default     = "Handler for AWS image events"
+}
+
 variable "log_retention_days" {
   type        = number
   description = "Number of days to retain CloudWatch logs."
