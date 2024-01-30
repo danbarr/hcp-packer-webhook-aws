@@ -14,7 +14,7 @@ terraform {
     }
     hcp = {
       source  = "hashicorp/hcp"
-      version = "~> 0.79"
+      version = "~> 0.82"
     }
   }
 }
@@ -90,4 +90,26 @@ resource "aws_secretsmanager_secret" "hmac_token" {
 resource "aws_secretsmanager_secret_version" "hmac_token" {
   secret_id     = aws_secretsmanager_secret.hmac_token.id
   secret_string = random_password.hmac_token.result
+}
+
+resource "hcp_notifications_webhook" "aws" {
+  name        = var.hcp_webhook_name
+  description = var.hcp_webhook_description
+  enabled     = true
+
+  config = {
+    hmac_key = aws_secretsmanager_secret_version.hmac_token.secret_string
+    url      = "${aws_api_gateway_stage.webhook.invoke_url}/${aws_api_gateway_resource.webhook.path_part}"
+  }
+
+  subscriptions = [
+    {
+      events = [
+        {
+          actions = ["complete", "delete", "restore", "revoke"]
+          source  = "hashicorp.packer.version"
+        },
+      ]
+    },
+  ]
 }
