@@ -117,8 +117,7 @@ def revoke(body):
     result = {"actions": []}
 
     try:
-        # The revoke webhook doesn't include the builds object, so we need to call get_builds to get them
-        amis = return_artifact_id(get_builds(body), "aws")
+        amis = return_artifact_id(body["event_payload"]["builds"], "aws")
         if len(amis) == 0:
             return {"statusCode": 200, "body": "No AMIs found in artifact version."}
 
@@ -242,7 +241,7 @@ def restore(body):
     result = {"actions": []}
     try:
         # The restore webhook doesn't include the builds object, so we need to call get_builds to get them
-        amis = return_artifact_id(get_builds(body), "aws")
+        amis = return_artifact_id(body["event_payload"]["builds"], "aws")
         if len(amis) == 0:
             return {"statusCode": 200, "body": "No AMIs found in artifact version."}
 
@@ -306,49 +305,6 @@ def get_secrets(secret_arn):
     client = boto3.client("secretsmanager")
     token = client.get_secret_value(SecretId=secret_arn)["SecretString"]
     return token
-
-
-def get_builds(body):
-    """Get the builds associated with an HCP Packer version. Used for the webhook events that don't include it in the event_payload."""
-    organization_id = body["event_payload"]["organization_id"]
-    project_id = body["event_payload"]["project_id"]
-    bucket_name = body["event_payload"]["bucket"]["name"]
-    fingerprint = body["event_payload"]["version"]["fingerprint"]
-
-    access_token = hcp_auth()
-    api_url = f"https://api.cloud.hashicorp.com/packer/2023-01-01/organizations/{organization_id}/projects/{project_id}/"
-    headers = {"Authorization": f"Bearer {access_token}"}
-
-    http = urllib3.PoolManager()
-    response = http.request(
-        "GET",
-        f"{api_url}/buckets/{bucket_name}/versions/{fingerprint}",
-        headers=headers,
-    )
-    if response.status != 200:
-        raise Exception(f"Failed to get builds from version: {response.data}")
-    return json.loads(response.data)["version"]["builds"]
-
-
-def hcp_auth():
-    """Get an HCP access token using a service principal key stored in AWS Secrets Manager."""
-    credential = json.loads(get_secrets(os.environ.get("HCP_CREDENTIAL_ARN")))
-    auth_url = "https://auth.idp.hashicorp.com/oauth2/token"
-    headers = {"Content-Type": "application/x-www-form-urlencoded"}
-    data = {
-        "client_id": credential["HCP_CLIENT_ID"],
-        "client_secret": credential["HCP_CLIENT_SECRET"],
-        "grant_type": "client_credentials",
-        "audience": "https://api.hashicorp.cloud",
-    }
-
-    http = urllib3.PoolManager()
-    response = http.request_encode_body(
-        "POST", auth_url, headers=headers, fields=data, encode_multipart=False
-    )
-    if response.status != 200:
-        raise Exception(f"Failed to get HCP access token: {response.data}")
-    return json.loads(response.data)["access_token"]
 
 
 def return_artifact_id(builds, provider):

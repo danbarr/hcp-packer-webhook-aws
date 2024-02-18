@@ -57,25 +57,6 @@ resource "hcp_project_iam_binding" "webhook" {
   role         = "roles/viewer"
 }
 
-resource "hcp_service_principal_key" "webhook" {
-  service_principal = hcp_service_principal.webhook.resource_name
-}
-
-resource "aws_secretsmanager_secret" "hcp_credential" {
-  name                    = "${local.base_name}-hcp-credential"
-  description             = "HCP credentials for webhook handler. Org: ${local.hcp_org_name}, project: ${local.hcp_project_name}."
-  recovery_window_in_days = 0
-}
-
-resource "aws_secretsmanager_secret_version" "hcp_credential" {
-  secret_id = aws_secretsmanager_secret.hcp_credential.id
-
-  secret_string = jsonencode({
-    HCP_CLIENT_ID     = hcp_service_principal_key.webhook.client_id
-    HCP_CLIENT_SECRET = hcp_service_principal_key.webhook.client_secret
-  })
-}
-
 resource "random_password" "hmac_token" {
   length  = 32
   special = true
