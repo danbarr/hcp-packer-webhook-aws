@@ -54,7 +54,6 @@ data "aws_iam_policy_document" "lambda_get_secrets" {
 
     resources = [
       aws_secretsmanager_secret.hmac_token.arn,
-      aws_secretsmanager_secret.hcp_credential.arn,
     ]
   }
 }
@@ -78,7 +77,6 @@ resource "aws_lambda_function" "webhook" {
   environment {
     variables = {
       HMAC_TOKEN_ARN     = aws_secretsmanager_secret.hmac_token.arn
-      HCP_CREDENTIAL_ARN = aws_secretsmanager_secret.hcp_credential.arn
     }
   }
 
